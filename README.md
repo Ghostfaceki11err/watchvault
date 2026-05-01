@@ -1,6 +1,12 @@
 # 🍿 WatchVault
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/watchvaults/deploy-status)](https://watchvaults.netlify.app/)
+
 **WatchVault** is a premium, beautifully designed web application that allows users to discover, explore, and track their favorite Movies, TV Shows, and Anime. Built with React and Firebase, it features a cinematic "Netflix-style" interface, deep metadata exploration via the TMDb API, and a personal Vault to curate your watchlists.
+
+### 🔴 [Live Demo: watchvaults.netlify.app](https://watchvaults.netlify.app/)
+
+![WatchVault Preview](https://drive.google.com/uc?export=view&id=1XtpyVqq-uxzPPDNlVZtxb1_1iWjrjZdB)
 
 ---
 
@@ -35,7 +41,7 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/watchvault.git
+git clone https://github.com/Ghostfaceki11err/watchvault.git
 cd watchvault
 ```
 
