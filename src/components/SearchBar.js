@@ -28,7 +28,7 @@ function SearchBar({ onSearch }) {
             }
             try {
                 const data = await searchMedia(query);
-                const filtered = data.filter(item => item.media_type === 'movie' || item.media_type === 'tv').slice(0, 5);
+                const filtered = data.results ? data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv').slice(0, 5) : [];
                 setSuggestions(filtered);
             } catch (error) {
                 console.error("Failed to fetch suggestions", error);
