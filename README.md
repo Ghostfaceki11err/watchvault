@@ -58,7 +58,7 @@ REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 REACT_APP_FIREBASE_APP_ID=your_app_id
 REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
-*(Note: Your `.env` file is safely ignored by Git to protect your secrets.)*
+
 
 ### 4. Run the Application
 ```bash
