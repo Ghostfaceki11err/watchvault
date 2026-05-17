@@ -68,6 +68,20 @@ export const updateVaultItemType = async (itemId, newType) => {
     }
 };
 
+export const updateVaultItemProgress = async (itemId, season, episode) => {
+    try {
+        const itemRef = doc(db, COLLECTION_NAME, itemId);
+        await updateDoc(itemRef, {
+            season,
+            episode
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating vault item progress:", error);
+        return { success: false, error: error.message };
+    }
+};
+
 export const removeVaultItem = async (itemId) => {
     try {
         const itemRef = doc(db, COLLECTION_NAME, itemId);

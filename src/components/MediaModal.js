@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import { getMediaDetails, getPersonDetails } from "../services/tmdbApi";
-import { addToVault, getVaultItems } from "../services/firestoreService";
+import { getMediaDetails, getPersonDetails, getSeasonDetails } from "../services/tmdbApi";
+import { addToVault, getVaultItems, updateVaultItemProgress } from "../services/firestoreService";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -14,6 +14,9 @@ function MediaModal({ media, onClose }) {
     const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
     const [vaultIds, setVaultIds] = useState(new Set());
+    const [vaultItems, setVaultItems] = useState([]);
+    const [selectedSeason, setSelectedSeason] = useState(null);
+    const [seasonEpisodes, setSeasonEpisodes] = useState([]);
     const modalContentRef = useRef(null);
     const { currentUser } = useAuth();
     const navigate = useNavigate();
@@ -26,6 +29,7 @@ function MediaModal({ media, onClose }) {
     useEffect(() => {
         if (currentUser) {
             getVaultItems(currentUser.uid).then(data => {
+                setVaultItems(data);
                 setVaultIds(new Set(data.map(item => item.tmdbId)));
             });
         }
@@ -49,11 +53,36 @@ function MediaModal({ media, onClose }) {
                 if (type === 'anime') type = 'tv'; // TMDb uses 'tv' for anime
                 const data = await getMediaDetails(currentMedia.tmdbId || currentMedia.id, type);
                 setDetails(data);
+                
+                if ((type === 'tv' || type === 'anime') && data.seasons && data.seasons.length > 0) {
+                    const nonZeroSeasons = data.seasons.filter(s => s.season_number > 0);
+                    const defaultSeason = nonZeroSeasons.length > 0 ? nonZeroSeasons[0].season_number : data.seasons[0].season_number;
+                    setSelectedSeason(defaultSeason);
+                } else {
+                    setSelectedSeason(null);
+                }
             }
             setLoading(false);
         };
         fetchDetails();
     }, [currentMedia]);
+
+    useEffect(() => {
+        const fetchSeason = async () => {
+            if (selectedSeason !== null && details && (details.id || currentMedia.tmdbId || currentMedia.id)) {
+                const tvId = details.id || currentMedia.tmdbId || currentMedia.id;
+                const data = await getSeasonDetails(tvId, selectedSeason);
+                if (data && data.episodes) {
+                    setSeasonEpisodes(data.episodes);
+                } else {
+                    setSeasonEpisodes([]);
+                }
+            } else {
+                setSeasonEpisodes([]);
+            }
+        };
+        fetchSeason();
+    }, [selectedSeason, details]);
 
     if (!currentMedia) return null;
 
@@ -153,6 +182,7 @@ function MediaModal({ media, onClose }) {
         const response = await addToVault(currentUser.uid, itemToSave);
         if (response.success) {
             setVaultIds(prev => new Set(prev).add(currentMedia.tmdbId || currentMedia.id));
+            setVaultItems(prev => [...prev, { ...itemToSave, id: response.id, season: 1, episode: 0, status: "Plan to Watch", tmdbId: currentMedia.tmdbId || currentMedia.id }]);
             toast.success(`${recTitle} added to your vault!`, { id: loadingToast });
         } else {
             toast.error("Failed to add to vault.", { id: loadingToast });
@@ -296,6 +326,103 @@ function MediaModal({ media, onClose }) {
 
                     {/* Bottom Section: Full Width Details */}
                     <div className="modal-bottom-section">
+                        {isTV && details?.seasons && details.seasons.length > 0 && (
+                            <div className="modal-episodes-section" style={{ marginBottom: '24px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <h3 style={{ fontSize: '1.2rem', margin: 0 }}>Episodes</h3>
+                                    <select 
+                                        value={selectedSeason || ""} 
+                                        onChange={(e) => setSelectedSeason(Number(e.target.value))}
+                                        style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '6px 12px', borderRadius: '8px', outline: 'none' }}
+                                    >
+                                        {details.seasons.filter(s => s.season_number > 0).map(s => (
+                                            <option key={s.season_number} value={s.season_number} style={{ background: '#1a1d24' }}>
+                                                {s.name || `Season ${s.season_number}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px', scrollbarWidth: 'thin', scrollbarColor: 'var(--accent-primary) transparent' }}>
+                                    {seasonEpisodes.length === 0 ? (
+                                        <div style={{ color: 'var(--text-secondary)' }}>Loading episodes...</div>
+                                    ) : (
+                                        seasonEpisodes.map(ep => {
+                                            const currentVaultItem = vaultItems.find(item => item.tmdbId === (currentMedia.tmdbId || currentMedia.id));
+                                            
+                                            // An episode is considered "watched" if the user is on a later season, 
+                                            // or if they are on the same season and the current episode is <= their tracked episode.
+                                            let isWatched = false;
+                                            if (currentVaultItem && currentVaultItem.season && currentVaultItem.episode !== undefined) {
+                                                if (selectedSeason < currentVaultItem.season) {
+                                                    isWatched = true;
+                                                } else if (selectedSeason === currentVaultItem.season && ep.episode_number <= currentVaultItem.episode) {
+                                                    isWatched = true;
+                                                }
+                                            }
+
+                                            const handleEpisodeClick = async (e) => {
+                                                e.stopPropagation();
+                                                if (!currentUser) {
+                                                    toast.error("Please login to track progress.");
+                                                    return;
+                                                }
+                                                if (!isCurrentInVault || !currentVaultItem) {
+                                                    toast.error("Add this show to your vault first!");
+                                                    return;
+                                                }
+
+                                                const loadingToast = toast.loading("Saving progress...");
+                                                const response = await updateVaultItemProgress(currentVaultItem.id, selectedSeason, ep.episode_number);
+                                                
+                                                if (response.success) {
+                                                    setVaultItems(prev => prev.map(item => 
+                                                        item.id === currentVaultItem.id ? { ...item, season: selectedSeason, episode: ep.episode_number } : item
+                                                    ));
+                                                    toast.success(`Progress saved: S${selectedSeason} E${ep.episode_number}`, { id: loadingToast });
+                                                } else {
+                                                    toast.error("Failed to save progress.", { id: loadingToast });
+                                                }
+                                            };
+
+                                            return (
+                                                <div 
+                                                    key={ep.id} 
+                                                    onClick={handleEpisodeClick}
+                                                    style={{ 
+                                                        display: 'flex', gap: '16px', 
+                                                        background: isWatched ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.03)', 
+                                                        padding: '12px', borderRadius: '8px', 
+                                                        border: isWatched ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(255,255,255,0.05)',
+                                                        cursor: (isCurrentInVault && currentVaultItem) ? 'pointer' : 'default',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {ep.still_path ? (
+                                                        <img src={`https://image.tmdb.org/t/p/w227_and_h127_bestv2${ep.still_path}`} alt={ep.name} style={{ width: '130px', height: '73px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0, opacity: isWatched ? 0.6 : 1 }} />
+                                                    ) : (
+                                                        <div style={{ width: '130px', height: '73px', background: '#1a1d24', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', flexShrink: 0, opacity: isWatched ? 0.6 : 1 }}>No Image</div>
+                                                    )}
+                                                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, opacity: isWatched ? 0.7 : 1 }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                                            <strong style={{ fontSize: '1rem', color: isWatched ? '#4ade80' : 'white' }}>
+                                                                {ep.episode_number}. {ep.name}
+                                                                {isWatched && <Check size={16} style={{display: 'inline-block', marginLeft: '6px', verticalAlign: 'text-bottom'}} />}
+                                                            </strong>
+                                                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{ep.runtime ? `${ep.runtime}m` : ''}</span>
+                                                        </div>
+                                                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                            {ep.overview || "No overview available."}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {cast.length > 0 && (
                             <div className="modal-cast-section">
                                 <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Top Cast</h3>

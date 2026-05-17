@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getVaultItems, updateVaultItemStatus, updateVaultItemType, removeVaultItem, addToVault, clearVault } from "../services/firestoreService";
+import { getVaultItems, updateVaultItemStatus, updateVaultItemType, removeVaultItem, addToVault, clearVault, updateVaultItemProgress } from "../services/firestoreService";
 import { searchMedia } from "../services/tmdbApi";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -54,6 +54,15 @@ function Vault() {
             toast.success("Type classification updated!");
         } else {
             toast.error("Failed to update type.");
+        }
+    };
+
+    const handleUpdateProgress = async (id, season, episode) => {
+        const response = await updateVaultItemProgress(id, season, episode);
+        if (response.success) {
+            setItems(items.map(item => item.id === id ? { ...item, season, episode } : item));
+        } else {
+            toast.error("Failed to update progress.");
         }
     };
 
@@ -370,6 +379,7 @@ function Vault() {
                                     item={item} 
                                     onUpdateStatus={handleUpdateStatus}
                                     onUpdateType={handleUpdateType}
+                                    onUpdateProgress={handleUpdateProgress}
                                     onRemove={handleRemove}
                                     onClick={() => setSelectedMedia(item)}
                                 />

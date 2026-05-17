@@ -1,6 +1,31 @@
 import { Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getEpisodeDetails } from "../services/tmdbApi";
 
-function VaultItem({ item, onUpdateStatus, onUpdateType, onRemove, onClick }) {
+function VaultItem({ item, onUpdateStatus, onUpdateType, onUpdateProgress, onRemove, onClick }) {
+    const [episodeName, setEpisodeName] = useState(null);
+
+    useEffect(() => {
+        const fetchEpisode = async () => {
+            if ((item.type === 'tv' || item.type === 'anime') && item.tmdbId && item.season > 0 && item.episode > 0) {
+                const data = await getEpisodeDetails(item.tmdbId, item.season, item.episode);
+                if (data && data.name) {
+                    setEpisodeName(data.name);
+                } else {
+                    setEpisodeName(null);
+                }
+            } else {
+                setEpisodeName(null);
+            }
+        };
+
+        // Add a slight debounce to avoid spamming the API if the user clicks '+' fast
+        const timeoutId = setTimeout(() => {
+            fetchEpisode();
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [item.type, item.tmdbId, item.season, item.episode]);
     const posterUrl = item.poster
         ? `https://image.tmdb.org/t/p/w500${item.poster}`
         : null;
@@ -17,6 +42,11 @@ function VaultItem({ item, onUpdateStatus, onUpdateType, onRemove, onClick }) {
             <div className="vault-info">
                 <div className="vault-details">
                     <h3 className="vault-title">{item.title}</h3>
+                    {episodeName && (
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontStyle: 'italic', marginTop: '2px' }}>
+                            {`S${item.season} E${item.episode}: ${episodeName}`}
+                        </span>
+                    )}
                 </div>
                 <div className="vault-actions">
                     <select 
@@ -41,6 +71,8 @@ function VaultItem({ item, onUpdateStatus, onUpdateType, onRemove, onClick }) {
                         <option value="Watching">Watching</option>
                         <option value="Completed">Completed</option>
                     </select>
+
+                    {/* Progress tracking moved to MediaModal */}
                     
                     <button 
                         className="remove-btn" 

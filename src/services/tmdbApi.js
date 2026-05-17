@@ -34,3 +34,29 @@ export const getPersonDetails = async (id) => {
     const data = await response.json();
     return data;
 };
+
+export const getEpisodeDetails = async (tvId, seasonNumber, episodeNumber) => {
+    try {
+        const response = await fetch(
+            `${BASE_URL}/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=${API_KEY}`
+        );
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data;
+    } catch (e) {
+        return null;
+    }
+};
+
+export const getSeasonDetails = async (tvId, seasonNumber) => {
+    try {
+        const response = await fetch(
+            `${BASE_URL}/tv/${tvId}/season/${seasonNumber}?api_key=${API_KEY}`
+        );
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data;
+    } catch (e) {
+        return null;
+    }
+};
