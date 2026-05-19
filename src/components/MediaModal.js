@@ -82,7 +82,7 @@ function MediaModal({ media, onClose }) {
             }
         };
         fetchSeason();
-    }, [selectedSeason, details]);
+    }, [selectedSeason, details, currentMedia.id, currentMedia.tmdbId]);
 
     if (!currentMedia) return null;
 
