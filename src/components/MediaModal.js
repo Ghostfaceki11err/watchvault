@@ -389,6 +389,7 @@ function MediaModal({ media, onClose }) {
                                                 <div 
                                                     key={ep.id} 
                                                     onClick={handleEpisodeClick}
+                                                    className="episode-card-row"
                                                     style={{ 
                                                         display: 'flex', gap: '16px', 
                                                         background: isWatched ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.03)', 
