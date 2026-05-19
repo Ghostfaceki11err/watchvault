@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LogOut, LayoutDashboard, Search } from "lucide-react";
+import { LogOut, LayoutDashboard, Search, Sparkles, BarChart3 } from "lucide-react";
 
 function Navbar() {
     const { currentUser, logout } = useAuth();
@@ -28,6 +28,20 @@ function Navbar() {
                             >
                                 <LayoutDashboard size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
                                 My Vault
+                            </Link>
+                            <Link 
+                                to="/recommendations" 
+                                className={`nav-link ${location.pathname === '/recommendations' ? 'active' : ''}`}
+                            >
+                                <Sparkles size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                                Discover
+                            </Link>
+                            <Link 
+                                to="/stats" 
+                                className={`nav-link ${location.pathname === '/stats' ? 'active' : ''}`}
+                            >
+                                <BarChart3 size={18} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                                Stats
                             </Link>
                             <button onClick={logout} className="btn btn-outline" style={{ padding: '6px 12px' }}>
                                 <LogOut size={16} /> Logout

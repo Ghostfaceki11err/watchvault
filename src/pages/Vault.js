@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import VaultItem from "../components/VaultItem";
 import MediaModal from "../components/MediaModal";
-import { Filter, Upload, Download, Search, Trash2 } from "lucide-react";
+import { Upload, Download, Search, Trash2, Filter } from "lucide-react";
 
 function Vault() {
     const { currentUser } = useAuth();
@@ -16,12 +16,11 @@ function Vault() {
     const [selectedMedia, setSelectedMedia] = useState(null);
     const fileInputRef = useRef(null);
 
-    // Filter/Sort States
+    // Dashboard & Filter/Sort States
     const [searchQuery, setSearchQuery] = useState("");
     const [filterType, setFilterType] = useState("all");
     const [filterStatus, setFilterStatus] = useState("all");
     const [sortBy, setSortBy] = useState("date_desc");
-
     useEffect(() => {
         if (!currentUser) {
             navigate("/login");

@@ -60,3 +60,17 @@ export const getSeasonDetails = async (tvId, seasonNumber) => {
         return null;
     }
 };
+
+export const getRecommendations = async (id, type) => {
+    // type must be 'movie' or 'tv'
+    try {
+        const response = await fetch(
+            `${BASE_URL}/${type}/${id}/recommendations?api_key=${API_KEY}`
+        );
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data;
+    } catch (e) {
+        return null;
+    }
+};
