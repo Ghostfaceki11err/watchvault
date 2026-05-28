@@ -89,33 +89,6 @@ function VaultItem({ item, onUpdateStatus, onUpdateType, onUpdateProgress, onRem
                             
                             <span style={{ color: 'rgba(255, 255, 255, 0.15)' }}>|</span>
 
-                            <button 
-                                onClick={() => {
-                                    const currentEp = item.episode || 0;
-                                    if (currentEp > 0) {
-                                        onUpdateProgress(item.id, item.season || 1, currentEp - 1);
-                                    }
-                                }}
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: 'none',
-                                    color: 'white',
-                                    width: '18px',
-                                    height: '18px',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold',
-                                    padding: '0'
-                                }}
-                                title="Previous Episode"
-                            >
-                                -
-                            </button>
-
                             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                 <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: '600' }}>EP</span>
                                 <input 
@@ -143,35 +116,6 @@ function VaultItem({ item, onUpdateStatus, onUpdateType, onUpdateProgress, onRem
                                     title="Episode Number"
                                 />
                             </div>
-
-                            <button 
-                                onClick={() => {
-                                    const currentEp = item.episode || 0;
-                                    const nextEp = currentEp + 1;
-                                    onUpdateProgress(item.id, item.season || 1, nextEp);
-                                    if (item.status === "Plan to Watch") {
-                                        onUpdateStatus(item.id, "Watching");
-                                    }
-                                }}
-                                style={{
-                                    background: 'rgba(229, 9, 20, 0.15)',
-                                    border: 'none',
-                                    color: 'var(--accent-primary)',
-                                    width: '18px',
-                                    height: '18px',
-                                    borderRadius: '3px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold',
-                                    padding: '0'
-                                }}
-                                title="Next Episode"
-                            >
-                                +
-                            </button>
                         </div>
                     )}
                 </div>

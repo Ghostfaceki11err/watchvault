@@ -123,7 +123,7 @@ function Home() {
             <SearchBar onSearch={handleSearch} />
 
             {isTrending && !loading && !error && (
-                <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', fontWeight: 600 }}>🔥 Trending This Week</h2>
+                <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', fontWeight: 600 }}> Trending This Week</h2>
             )}
 
             {!isTrending && !loading && !error && results.length > 0 && (
