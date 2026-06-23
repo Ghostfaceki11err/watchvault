@@ -15,6 +15,18 @@ function Recommendations() {
     const [personalizedRecs, setPersonalizedRecs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
 
     // Show More & Filter options
     const [filterType, setFilterType] = useState("all");
@@ -382,6 +394,21 @@ function Recommendations() {
                     AI-powered watchlist recommendations tailored strictly to your unique media tastes.
                 </p>
             </div>
+
+            {!isOnline && (
+                <div style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginBottom: '24px',
+                    textAlign: 'center',
+                    color: '#f87171',
+                    fontSize: '0.9rem'
+                }}>
+                    You are currently offline. Recommendations require an active internet connection.
+                </div>
+            )}
 
             {/* RECOMMENDATIONS HUD NAVIGATION & FILTER TABS */}
             {personalizedRecs.length > 0 && (

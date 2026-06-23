@@ -13,6 +13,7 @@ function MediaModal({ media, onClose }) {
     
     const [details, setDetails] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [vaultIds, setVaultIds] = useState(new Set());
     const [vaultItems, setVaultItems] = useState([]);
     const [selectedSeason, setSelectedSeason] = useState(null);
@@ -41,6 +42,7 @@ function MediaModal({ media, onClose }) {
         const fetchDetails = async () => {
             setLoading(true);
             setDetails(null);
+            setError(null);
             setIsOverviewExpanded(false);
             setShowLightbox(false);
             
@@ -49,7 +51,8 @@ function MediaModal({ media, onClose }) {
                 modalContentRef.current.scrollTop = 0;
             }
 
-            if (currentMedia.media_type === 'person' || currentMedia.type === 'person') {
+            try {
+                if (currentMedia.media_type === 'person' || currentMedia.type === 'person') {
                 const data = await getPersonDetails(currentMedia.id);
                 setDetails(data);
             } else if (currentMedia.media_type === 'movie' || currentMedia.media_type === 'tv' || currentMedia.type === 'movie' || currentMedia.type === 'tv' || currentMedia.type === 'anime') {
@@ -65,6 +68,10 @@ function MediaModal({ media, onClose }) {
                 } else {
                     setSelectedSeason(null);
                 }
+            }
+            } catch (e) {
+                console.error("Failed to fetch details", e);
+                setError("Failed to retrieve details. Please check your internet connection.");
             }
             setLoading(false);
         };
@@ -248,6 +255,17 @@ function MediaModal({ media, onClose }) {
                 )}
 
                 <div className="modal-body" style={{ marginTop: backdropUrl ? '-100px' : '0' }}>
+                    {error ? (
+                        <div style={{
+                            padding: '60px 20px',
+                            textAlign: 'center',
+                            color: '#f87171'
+                        }}>
+                            <h3 style={{ fontSize: '1.4rem', fontWeight: 600 }}>Unable to retrieve details</h3>
+                            <p style={{ marginTop: '10px', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{error}</p>
+                        </div>
+                    ) : (
+                        <>
                     
                     {/* Top Section: Poster & Core Info */}
                     <div className="modal-top-section">
@@ -656,7 +674,8 @@ function MediaModal({ media, onClose }) {
                             </div>
                         )}
                     </div>
-                </div>
+                </>
+            )}
             </div>
 
             {showLightbox && (
@@ -713,7 +732,8 @@ function MediaModal({ media, onClose }) {
                 </div>
             )}
         </div>
-    );
+    </div>
+);
 }
 
 export default MediaModal;

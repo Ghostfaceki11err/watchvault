@@ -1,17 +1,49 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { LogOut, LayoutDashboard, Search, Sparkles, BarChart3 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 function Navbar() {
     const { currentUser, logout } = useAuth();
     const location = useLocation();
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
 
     return (
         <nav className="navbar">
             <div className="container">
-                <Link to="/" className="nav-brand">
-                    WatchVault
-                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Link to="/" className="nav-brand">
+                        WatchVault
+                    </Link>
+                    {!isOnline && (
+                        <span style={{
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.7rem',
+                            fontWeight: '600',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase'
+                        }}>
+                            Offline Mode
+                        </span>
+                    )}
+                </div>
                 <div className="nav-links">
                     <Link 
                         to="/" 

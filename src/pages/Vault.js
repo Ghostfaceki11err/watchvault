@@ -16,6 +16,18 @@ function Vault() {
     const [loading, setLoading] = useState(true);
     const [selectedMedia, setSelectedMedia] = useState(null);
     const fileInputRef = useRef(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
 
     // Dashboard & Filter/Sort States
     const [searchQuery, setSearchQuery] = useState("");
@@ -313,6 +325,21 @@ function Vault() {
                     </button>
                 </div>
             </div>
+
+            {!isOnline && (
+                <div style={{
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginBottom: '24px',
+                    textAlign: 'center',
+                    color: '#60a5fa',
+                    fontSize: '0.9rem'
+                }}>
+                    Offline Mode: Browsing local vault cache. Changes will sync automatically once connected.
+                </div>
+            )}
 
             {/* Vault Search Bar */}
             <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '400px' }}>

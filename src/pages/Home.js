@@ -20,6 +20,18 @@ function Home() {
     const [selectedMedia, setSelectedMedia] = useState(null);
     const [isTrending, setIsTrending] = useState(true);
     const [vaultIds, setVaultIds] = useState(new Set());
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
 
     const { currentUser } = useAuth();
     const navigate = useNavigate();
@@ -124,6 +136,23 @@ function Home() {
             </p>
             
             <SearchBar query={currentQuery} setQuery={setCurrentQuery} onSearch={handleSearch} />
+
+            {!isOnline && (
+                <div style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    marginBottom: '30px',
+                    textAlign: 'center',
+                    color: '#f87171',
+                    fontSize: '0.9rem',
+                    maxWidth: '600px',
+                    margin: '0 auto 30px'
+                }}>
+                    You are currently offline. Search is unavailable, but you can browse your Vault.
+                </div>
+            )}
 
             {!isTrending && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
