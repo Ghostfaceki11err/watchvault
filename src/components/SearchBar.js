@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { searchMedia } from "../services/tmdbApi";
 
-function SearchBar({ onSearch }) {
-    const [query, setQuery] = useState("");
+function SearchBar({ query, setQuery, onSearch }) {
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const wrapperRef = useRef(null);

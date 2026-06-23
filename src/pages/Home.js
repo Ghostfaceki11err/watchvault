@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { searchMedia, getTrending } from "../services/tmdbApi";
 import { addToVault, getVaultItems } from "../services/firestoreService";
 import { useAuth } from "../context/AuthContext";
@@ -6,7 +6,9 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import SearchBar from "../components/SearchBar";
 import MediaCard from "../components/MediaCard";
-import MediaModal from "../components/MediaModal";
+import { ArrowLeft } from "lucide-react";
+
+const MediaModal = lazy(() => import("../components/MediaModal"));
 
 function Home() {
     const [results, setResults] = useState([]);
@@ -113,6 +115,7 @@ function Home() {
         }
     };
 
+
     return (
         <div className="page container">
             <h1 className="page-title" style={{ textAlign: "center" }}>Discover & Vault</h1>
@@ -120,7 +123,22 @@ function Home() {
                 Search for your favorite movies, TV series, or anime and save them for later.
             </p>
             
-            <SearchBar onSearch={handleSearch} />
+            <SearchBar query={currentQuery} setQuery={setCurrentQuery} onSearch={handleSearch} />
+
+            {!isTrending && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '30px' }}>
+                    <button 
+                        className="btn btn-outline" 
+                        onClick={() => {
+                            setCurrentQuery("");
+                            loadTrending();
+                        }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 20px', fontSize: '0.9rem' }}
+                    >
+                        <ArrowLeft size={16} /> Back to Trending
+                    </button>
+                </div>
+            )}
 
             {isTrending && !loading && !error && (
                 <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', fontWeight: 600 }}> Trending This Week</h2>
@@ -130,7 +148,28 @@ function Home() {
                 <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', fontWeight: 600 }}>Search Results for "{currentQuery}"</h2>
             )}
 
-            {loading && page === 1 && <div style={{ textAlign: "center", padding: "40px 0" }}>Loading...</div>}
+            {loading && page === 1 && (
+                <>
+                    <style>{`
+                        @keyframes skeletonPulse {
+                            0% { background-position: 200% 0; }
+                            100% { background-position: -200% 0; }
+                        }
+                    `}</style>
+                    <div className="media-grid" style={{ marginBottom: '40px' }}>
+                        {[...Array(8)].map((_, i) => (
+                            <div key={i} className="skeleton-card" style={{
+                                borderRadius: '12px',
+                                aspectRatio: '2 / 3',
+                                background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.02) 75%)',
+                                backgroundSize: '200% 100%',
+                                animation: 'skeletonPulse 1.5s infinite linear',
+                                border: '1px solid rgba(255, 255, 255, 0.05)'
+                            }}></div>
+                        ))}
+                    </div>
+                </>
+            )}
             {error && <div style={{ color: "#f87171", textAlign: "center" }}>{error}</div>}
 
             {!loading && !error && results.length > 0 && (
@@ -164,7 +203,9 @@ function Home() {
             )}
 
             {selectedMedia && (
-                <MediaModal media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+                <Suspense fallback={null}>
+                    <MediaModal media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+                </Suspense>
             )}
         </div>
     );

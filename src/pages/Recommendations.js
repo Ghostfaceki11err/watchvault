@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getVaultItems, addToVault } from "../services/firestoreService";
 import { getRecommendations } from "../services/tmdbApi";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import MediaModal from "../components/MediaModal";
 import { Sparkles, Plus, Info, Star, ChevronDown } from "lucide-react";
+
+const MediaModal = lazy(() => import("../components/MediaModal"));
 
 function Recommendations() {
     const { currentUser } = useAuth();
@@ -456,7 +457,9 @@ function Recommendations() {
 
             {/* Interactive TMDb Details Modal */}
             {selectedMedia && (
-                <MediaModal media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+                <Suspense fallback={null}>
+                    <MediaModal media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+                </Suspense>
             )}
         </div>
     );

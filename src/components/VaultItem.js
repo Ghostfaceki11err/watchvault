@@ -27,13 +27,13 @@ function VaultItem({ item, onUpdateStatus, onUpdateType, onUpdateProgress, onRem
         return () => clearTimeout(timeoutId);
     }, [item.type, item.tmdbId, item.season, item.episode]);
     const posterUrl = item.poster
-        ? `https://image.tmdb.org/t/p/w500${item.poster}`
+        ? `https://image.tmdb.org/t/p/w342${item.poster}`
         : null;
 
     return (
         <div className="vault-item" onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
             {posterUrl ? (
-                <img src={posterUrl} alt={item.title} className="vault-poster" />
+                <img src={posterUrl} alt={item.title} className="vault-poster" loading="lazy" />
             ) : (
                 <div className="vault-poster" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1d24' }}>
                     <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No Image</span>

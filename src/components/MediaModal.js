@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { getMediaDetails, getPersonDetails, getSeasonDetails } from "../services/tmdbApi";
-import { addToVault, getVaultItems, updateVaultItemProgress } from "../services/firestoreService";
+import { addToVault, getVaultItems, updateVaultItemProgress, removeVaultItem } from "../services/firestoreService";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { X, Star, Plus, Check, ArrowLeft } from "lucide-react";
+import { X, Star, Plus, Check, ArrowLeft, Calendar, Trash2 } from "lucide-react";
 import YouTube from "react-youtube";
 
 function MediaModal({ media, onClose }) {
@@ -17,6 +17,8 @@ function MediaModal({ media, onClose }) {
     const [vaultItems, setVaultItems] = useState([]);
     const [selectedSeason, setSelectedSeason] = useState(null);
     const [seasonEpisodes, setSeasonEpisodes] = useState([]);
+    const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
+    const [showLightbox, setShowLightbox] = useState(false);
     const modalContentRef = useRef(null);
     const { currentUser } = useAuth();
     const navigate = useNavigate();
@@ -39,6 +41,8 @@ function MediaModal({ media, onClose }) {
         const fetchDetails = async () => {
             setLoading(true);
             setDetails(null);
+            setIsOverviewExpanded(false);
+            setShowLightbox(false);
             
             // Scroll back to top when media changes
             if (modalContentRef.current) {
@@ -189,6 +193,28 @@ function MediaModal({ media, onClose }) {
         }
     };
 
+    const handleRemoveCurrentFromVault = async () => {
+        const itemId = currentMedia.tmdbId || currentMedia.id;
+        const vaultItem = vaultItems.find(vi => vi.tmdbId === itemId);
+        if (!vaultItem) return;
+
+        const recTitle = currentMedia.title || currentMedia.name;
+        const loadingToast = toast.loading(`Removing ${recTitle}...`);
+
+        const response = await removeVaultItem(vaultItem.id);
+        if (response.success) {
+            setVaultIds(prev => {
+                const next = new Set(prev);
+                next.delete(itemId);
+                return next;
+            });
+            setVaultItems(prev => prev.filter(vi => vi.id !== vaultItem.id));
+            toast.success(`${recTitle} removed from your vault!`, { id: loadingToast });
+        } else {
+            toast.error("Failed to remove from vault.", { id: loadingToast });
+        }
+    };
+
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={e => e.stopPropagation()} ref={modalContentRef}>
@@ -226,7 +252,17 @@ function MediaModal({ media, onClose }) {
                     {/* Top Section: Poster & Core Info */}
                     <div className="modal-top-section">
                         {posterUrl ? (
-                            <img src={posterUrl} alt={title} className="modal-poster" style={isPerson ? { height: '300px', objectFit: 'cover' } : {}} />
+                            <img 
+                                src={posterUrl} 
+                                alt={title} 
+                                className="modal-poster" 
+                                style={{
+                                    ...(isPerson ? { height: '300px', objectFit: 'cover' } : {}),
+                                    cursor: 'zoom-in'
+                                }} 
+                                onClick={() => setShowLightbox(true)}
+                                title="Click to view full image"
+                            />
                         ) : (
                             <div className="modal-poster" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1a1d24' }}>
                                 <span style={{ color: '#94a3b8' }}>No Image</span>
@@ -286,12 +322,12 @@ function MediaModal({ media, onClose }) {
                             </div>
 
                             {!isPerson && (
-                                <div style={{ marginBottom: '20px', maxWidth: '300px' }}>
+                                <div style={{ marginBottom: '20px', maxWidth: '300px', display: 'flex', gap: '8px' }}>
                                     <button 
                                         className="btn"
                                         onClick={handleAddCurrentToVault}
                                         style={{ 
-                                            width: '100%', 
+                                            flex: 1, 
                                             display: 'flex', 
                                             justifyContent: 'center', 
                                             alignItems: 'center', 
@@ -302,9 +338,30 @@ function MediaModal({ media, onClose }) {
                                             cursor: isCurrentInVault ? 'default' : 'pointer',
                                             padding: '12px'
                                         }}
+                                        disabled={isCurrentInVault}
                                     >
                                         {isCurrentInVault ? <><Check size={18} /> In Your Vault</> : <><Plus size={18} /> Add to Vault</>}
                                     </button>
+                                    
+                                    {isCurrentInVault && (
+                                        <button 
+                                            className="btn"
+                                            onClick={handleRemoveCurrentFromVault}
+                                            style={{
+                                                background: 'rgba(239, 68, 68, 0.15)',
+                                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                color: '#f87171',
+                                                padding: '12px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                            }}
+                                            title="Remove from Vault"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
                                 </div>
                             )}
 
@@ -318,8 +375,55 @@ function MediaModal({ media, onClose }) {
                                 </div>
                             )}
 
+                            {details?.next_episode_to_air && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '0.82rem',
+                                    color: '#34d399',
+                                    marginTop: '8px',
+                                    marginBottom: '20px',
+                                    fontWeight: '600',
+                                    background: 'rgba(52, 211, 153, 0.1)',
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    width: 'fit-content',
+                                    border: '1px solid rgba(52, 211, 153, 0.2)'
+                                }}>
+                                    <Calendar size={14} />
+                                    <span>Next Episode: S{details.next_episode_to_air.season_number}E{details.next_episode_to_air.episode_number} - "{details.next_episode_to_air.name}" ({details.next_episode_to_air.air_date})</span>
+                                </div>
+                            )}
+
                             <p className="modal-overview" style={isPerson ? { whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto', paddingRight: '10px' } : {}}>
-                                {loading ? "Loading details..." : overview}
+                                {loading ? "Loading details..." : (
+                                    <>
+                                        {overview && overview.length > 250 && !isOverviewExpanded ? (
+                                            <>
+                                                {overview.substring(0, 250)}...
+                                                <span 
+                                                    onClick={() => setIsOverviewExpanded(true)}
+                                                    style={{ color: 'var(--accent-primary)', fontWeight: '600', cursor: 'pointer', marginLeft: '6px' }}
+                                                >
+                                                    more
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {overview}
+                                                {overview && overview.length > 250 && isOverviewExpanded && (
+                                                    <span 
+                                                        onClick={() => setIsOverviewExpanded(false)}
+                                                        style={{ color: 'var(--accent-primary)', fontWeight: '600', cursor: 'pointer', marginLeft: '6px' }}
+                                                    >
+                                                        less
+                                                    </span>
+                                                )}
+                                            </>
+                                        )}
+                                    </>
+                                )}
                             </p>
                         </div>
                     </div>
@@ -400,7 +504,7 @@ function MediaModal({ media, onClose }) {
                                                     }}
                                                 >
                                                     {ep.still_path ? (
-                                                        <img src={`https://image.tmdb.org/t/p/w227_and_h127_bestv2${ep.still_path}`} alt={ep.name} style={{ width: '130px', height: '73px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0, opacity: isWatched ? 0.6 : 1 }} />
+                                                        <img src={`https://image.tmdb.org/t/p/w227_and_h127_bestv2${ep.still_path}`} alt={ep.name} style={{ width: '130px', height: '73px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0, opacity: isWatched ? 0.6 : 1 }} loading="lazy" />
                                                     ) : (
                                                         <div style={{ width: '130px', height: '73px', background: '#1a1d24', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', flexShrink: 0, opacity: isWatched ? 0.6 : 1 }}>No Image</div>
                                                     )}
@@ -439,6 +543,7 @@ function MediaModal({ media, onClose }) {
                                                     src={`https://image.tmdb.org/t/p/w185${actor.profile_path}`} 
                                                     alt={actor.name} 
                                                     className="cast-photo"
+                                                    loading="lazy"
                                                 />
                                             ) : (
                                                 <div className="cast-photo-fallback">No Img</div>
@@ -479,6 +584,7 @@ function MediaModal({ media, onClose }) {
                                                         src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`} 
                                                         alt={rec.title || rec.name} 
                                                         className="recommendation-poster"
+                                                        loading="lazy"
                                                     />
                                                 ) : (
                                                     <div className="recommendation-poster-fallback">No Img</div>
@@ -522,6 +628,7 @@ function MediaModal({ media, onClose }) {
                                                         src={`https://image.tmdb.org/t/p/w342${rec.poster_path}`} 
                                                         alt={rec.title || rec.name} 
                                                         className="recommendation-poster"
+                                                        loading="lazy"
                                                     />
                                                 ) : (
                                                     <div className="recommendation-poster-fallback">No Img</div>
@@ -551,6 +658,60 @@ function MediaModal({ media, onClose }) {
                     </div>
                 </div>
             </div>
+
+            {showLightbox && (
+                <div 
+                    className="lightbox-overlay" 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowLightbox(false);
+                    }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        background: 'rgba(0, 0, 0, 0.95)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 99999,
+                        cursor: 'zoom-out'
+                    }}
+                >
+                    <img 
+                        src={posterUrl ? posterUrl.replace("/w500", "/original") : ""} 
+                        alt={title} 
+                        style={{
+                            maxWidth: '90%',
+                            maxHeight: '90%',
+                            objectFit: 'contain',
+                            borderRadius: '8px',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.9)',
+                            animation: 'zoomIn 0.2s ease'
+                        }}
+                    />
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowLightbox(false);
+                        }}
+                        style={{
+                            position: 'absolute',
+                            top: '20px',
+                            right: '20px',
+                            background: 'rgba(255,255,255,0.1)',
+                            border: 'none',
+                            color: 'white',
+                            padding: '12px 16px',
+                            borderRadius: '50%',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer'
+                        }}
+                    >✕</button>
+                </div>
+            )}
         </div>
     );
 }

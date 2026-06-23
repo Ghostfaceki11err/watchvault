@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from "react";
 import { useAuth } from "../context/AuthContext";
 import { getVaultItems, updateVaultItemStatus, updateVaultItemType, removeVaultItem, addToVault, clearVault, updateVaultItemProgress } from "../services/firestoreService";
 import { searchMedia } from "../services/tmdbApi";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import VaultItem from "../components/VaultItem";
-import MediaModal from "../components/MediaModal";
 import { Upload, Download, Search, Trash2, Filter } from "lucide-react";
+
+const MediaModal = lazy(() => import("../components/MediaModal"));
 
 function Vault() {
     const { currentUser } = useAuth();
@@ -393,7 +394,9 @@ function Vault() {
             )}
 
             {selectedMedia && (
-                <MediaModal media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+                <Suspense fallback={null}>
+                    <MediaModal media={selectedMedia} onClose={() => setSelectedMedia(null)} />
+                </Suspense>
             )}
         </div>
     );
